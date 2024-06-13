@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    environment:
+      PORT: 7070
+      MONGO_URI: mongodb://mongodb:27017/auth
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "7070:7070"
+    depends_on:
+      - rabbitmq
+      - mongodb
+
+  task-service:
+    build:
+      context: ./task-service
+    container_name: task-service
+    environment:
+      PORT: 6060
+      MONGO_URI: mongodb://mongodb:27017/tasks
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "6060:6060"
+    depends_on:
+      - rabbitmq
+      - mongodb
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    environment:
+      PORT: 50505000
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    ports:
+      - "5050:5050"
+    depends_on:
+      - rabbitmq
+
+volumes:
+  mongodb_data:

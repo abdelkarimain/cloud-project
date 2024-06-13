@@ -43,6 +43,11 @@ async function connect() {
 
 connect();
 
+app.get("/notifications", async (req, res) => {
+  const notifications = await Notification.find();
+  return res.json(notifications);
+});
+
 app.listen(PORT, () => {
   console.log(`Notification Service running on port ${PORT}`);
 });
