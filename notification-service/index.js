@@ -4,7 +4,6 @@ const PORT = 5050;
 const mongoose = require("mongoose");
 const Notification = require("./notification");
 const amqp = require("amqplib");
-
 var channel, connection;
 
 mongoose
@@ -29,11 +28,15 @@ async function connect() {
     // Consume messages from the TASK queue
     channel.consume("TASK", async (data) => {
       const task = JSON.parse(data.content);
-      const newNotification = new Notification({
-        user: task.user,
-        message: `Task ${task.title} is not completed yet.`,
-      });
-      await newNotification.save();
+
+      if (task.completed === true) {
+        const newNotification = new Notification({
+          user: task.user,
+          message: `Task ${task.title} has been completed.`,
+        });
+        await newNotification.save();
+      }
+
       channel.ack(data);
     });
   } catch (error) {

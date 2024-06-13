@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const Task = require("./task");
 const amqp = require("amqplib");
 const isAuthenticated = require("../isAuthenticated");
-
 var channel, connection;
 
 // MongoDB connection
@@ -32,7 +31,6 @@ async function connect() {
 connect();
 
 // Routes
-
 // Create a task
 app.post("/task/create", isAuthenticated, async (req, res) => {
   try {
@@ -51,6 +49,7 @@ app.post("/task/create", isAuthenticated, async (req, res) => {
 });
 
 // Complete a task
+// Complete a task
 app.post("/task/complete", isAuthenticated, async (req, res) => {
   try {
     const { taskId } = req.body;
@@ -58,6 +57,20 @@ app.post("/task/complete", isAuthenticated, async (req, res) => {
     if (task) {
       task.completed = true;
       await task.save();
+
+      // Publish message to RabbitMQ
+      channel.sendToQueue(
+        "TASK",
+        Buffer.from(
+          JSON.stringify({
+            taskId: task._id,
+            title: task.title,
+            user: task.user,
+            completed: task.completed,
+          })
+        )
+      );
+
       return res.json(task);
     } else {
       return res.status(404).json({ message: "Task not found" });
